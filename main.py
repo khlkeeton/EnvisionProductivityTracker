@@ -18,20 +18,17 @@ month = date.today().month
 day = date.today().day
 year = date.today().year
 keepgoing = True
-numPerRefresh=5
+numPerRefresh = 5
 start_time = time.time()  # to be compared with curr time in loop
 xCoord = [0]  # things used to set up graph
 yCoord = [0]
+actualYCoord = [0]
 timeDone = 0  # track number of items made
 timeLapsed = 0
-timeComplete=60*60*8
+timeComplete = 60 * 60 * 8
 
 
-def time_convert(sec):  # can be used to show time elapsed. May be used later
-    mins = sec // 60
-    sec = sec % 60
-    hours = (mins // 60) % 24 - 5
-    mins = mins % 60
+def time_convert():  # can be used to show time elapsed. May be used later
     return time.strftime("%H:%M", time.localtime(time.time()))
 
 
@@ -77,8 +74,9 @@ def changeParamBut():
         if len(inputNumWorker.get(1.0, "end-1c")) != 0:
             numWorker = inputNumWorker.get(1.0, "end-1c")
         if len(inputRefreshRate.get(1.0, "end-1c")) != 0:
-            refreshRate = int(inputRefreshRate.get(1.0, "end-1c"))*60
-        numPerRefresh=(int(goal)-int(yCoord[len(yCoord)-1]))/(timeComplete-(timeLapsed/timeDone))*refreshRate
+            refreshRate = int(inputRefreshRate.get(1.0, "end-1c")) * 60
+        numPerRefresh = (int(goal) - int(yCoord[len(yCoord) - 1])) / (
+                    timeComplete - (timeLapsed - timeDone)) * refreshRate
         top.destroy()
 
     button = tk.Button(top, text="input parameters", command=inputstuff)
@@ -89,7 +87,6 @@ def changeParamBut():
     inputRefreshRate.pack()
     button.pack()
     top.geometry("750x250")
-
 
 
 window = tk.Tk()
@@ -129,7 +126,7 @@ def killBut():
     convCoord = []  # sets up array in proper format for table
     i = 0
     while i < len(xCoord):
-        convCoord.append([time_convert(xCoord[i]), yCoord[i]])
+        convCoord.append([time_convert(), yCoord[i]])
         i += 1
 
     tableCoords = np.array(convCoord)  # convert fake table to real table
@@ -151,7 +148,15 @@ buttonKill.pack()
 
 
 def speakBut():
-    message = "L+Ratio"
+    message = ""
+    if actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1]:
+        message = "You are on track"
+    elif actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1] * .9:
+        message = "You are almost on track. You are {0} off".format(
+            yCoord[len(yCoord) - 1] - actualYCoord[len(actualYCoord) - 1])
+    else:
+        message = "You are almost not on track. You are {0} off".format(
+            yCoord[len(yCoord) - 1] - actualYCoord[len(actualYCoord) - 1])
     speech = gTTS(text=message)
     speech.save("msg.mp3")
     playsound('msg.mp3')
@@ -178,7 +183,7 @@ def task():
         convCoord = []  # sets up array in proper format for table
         i = 0
         while i < len(xCoord):
-            convCoord.append([time_convert(xCoord[i]), yCoord[i]])
+            convCoord.append([time_convert(), yCoord[i]])
             i += 1
 
         tableCoords = np.array(convCoord)  # convert fake table to real table
@@ -188,8 +193,10 @@ def task():
         df.to_excel(
             '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'.format(year, month, day,
                                                                             numWorker))  # push to excel
+        speakBut()
         while timeLapsed % int(refreshRate) < 1:  # ensure loop not re-entered immediately
             timeLapsed = time.time() - start_time
+
     window.update()
     window.after(1, lambda: task())
 
