@@ -1,6 +1,7 @@
 import time
 import tkinter as tk
 from datetime import date
+from tkinter import CENTER
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,7 @@ import pandas as pd
 from gtts import gTTS
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from playsound import playsound
+from PIL import ImageTk, Image
 convCoord = []  # sets up array in proper format for table
 
 
@@ -163,13 +165,13 @@ def task():
 
 frame1 = tk.Frame(master=window, width=250, height=100, bg="red")
 frame1.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True)
-frame2 = tk.Frame(master=window, width=100, bg="YELLOW")
+frame2 = tk.Frame(master=window, width=100, bg="WHITE")
 frame2.pack(fill=tk.BOTH, side=tk.BOTTOM, expand=True)
 frame3 = tk.Frame(master=window, width=50, bg="blue")
 frame3.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
-frame4 = tk.Frame(master=window, width=100, bg="BLUE")
+frame4 = tk.Frame(master=window, width=100, bg="WHITE")
 frame4.pack(fill=tk.BOTH, side=tk.BOTTOM, expand=True)
-frame5 = tk.Frame(master=window, width=50, bg="yellow")
+frame5 = tk.Frame(master=window, width=50, bg="WHITE")
 frame5.pack(fill=tk.BOTH, side=tk.BOTTOM, expand=True)
 
 # graph
@@ -191,17 +193,26 @@ canvas.get_tk_widget().pack(expand=True, fill=tk.BOTH)
 canvas.draw()
 
 # create buttons
-settingsImage= tk.PhotoImage(file="settingsIcon.jpg")
-buttonChangeParam = tk.Button(frame5, text="Change parameters", image=settingsImage, command=lambda: changeParamBut())
-buttonChangeParam.pack()
-killImage= tk.PhotoImage(file="powerIcon.jpg")
+image=Image.open("settingsIcon.png")
+image=image.resize((int(frame5.winfo_width()*.9*72), int(frame5.winfo_width()*.9*72)))
+settingsImage= ImageTk.PhotoImage(image)
+buttonChangeParam = tk.Button(frame5, text="Change parameters", image=settingsImage,
+                              command=lambda: changeParamBut())
+buttonChangeParam.place(relx=0.5, rely=0.5, anchor= CENTER)
+
+image=Image.open("powerIcon.png")
+image=image.resize((int(frame5.winfo_width()*.9*72), int(frame5.winfo_width()*.9*72)))
+killImage= ImageTk.PhotoImage(image)
 buttonKill = tk.Button(frame2, text="close window", image=killImage,
                        command=lambda:
                        killBut())
-buttonKill.pack()
-soundImage=tk.PhotoImage(file="soundIcons.jpg")
+buttonKill.place(relx=0.5, rely=0.5, anchor= CENTER)
+
+image=Image.open("soundIcons.png")
+image=image.resize((int(frame5.winfo_width()*.9*72), int(frame5.winfo_width()*.9*72)))
+soundImage= ImageTk.PhotoImage(image)
 buttonSpeak = tk.Button(frame4, text="speak", image=soundImage, command=lambda: speakBut())
-buttonSpeak.pack()
+buttonSpeak.place(relx=0.5, rely=0.5, anchor= CENTER)
 
 window.after(1, func=task())
 changeParamBut()
