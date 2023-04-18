@@ -1,0 +1,12 @@
+import serial
+
+ser = serial.Serial('COM4', 9600, timeout=1)
+
+try:
+    while True:
+        value = ser.readline().decode().rstrip()
+        print("Received value: ", value)
+except KeyboardInterrupt:
+    print("Program stopped by user")
+
+ser.close()
