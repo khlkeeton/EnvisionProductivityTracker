@@ -8,6 +8,8 @@ import pandas as pd
 from gtts import gTTS
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from playsound import playsound
+convCoord = []  # sets up array in proper format for table
+
 
 # set global variables used everywhere
 goal = 0
@@ -26,6 +28,10 @@ actualYCoord = [0]  # uses the arudino code
 timeDone = 0  # track number of items made
 timeLapsed = 0
 timeComplete = 60 * 60 * 8
+window = tk.Tk()  # create window and frames for buttons
+window.attributes('-fullscreen', True)
+numDone=0
+
 
 
 def time_convert():  # can be used to show time elapsed. May be used later
@@ -33,7 +39,7 @@ def time_convert():  # can be used to show time elapsed. May be used later
 
 
 def changeParamBut():
-    def inputstuff():
+    def inputStuff():
         # change global variables. If an input is not changed, do not change it
         global goal
         global numPerCycle
@@ -80,7 +86,7 @@ def changeParamBut():
     numWorkerLabel.pack(side=tk.LEFT)
     refreshRateLabel = tk.Label(frame4SubWind, text="The refresh rate on this station in minutes is: ")
     refreshRateLabel.pack(side=tk.LEFT)
-    button = tk.Button(top, text="input parameters", command=inputstuff())
+    button = tk.Button(top, text="input parameters", command=lambda: inputStuff())
     inputToDo.pack()
     inputNumCycle.pack()
     inputNumWorker.pack()
@@ -89,15 +95,13 @@ def changeParamBut():
     button.pack()
     top.geometry("750x250")
 
+convCoord = []  # sets up array in proper format for table
 
 # close big full screen window. Saves an extra copy of the excel spreadsheet
 def killBut():
     # creates table
-    convCoord = []  # sets up array in proper format for table
-    i = 0
-    while i < len(xCoord):
-        convCoord.append([time_convert(), yCoord[i]])
-        i += 1
+    global convCoord
+    convCoord.append([time_convert(), yCoord[len(yCoord) - 1]])
 
     tableCoords = np.array(convCoord)  # convert fake table to real table
     df = pd.DataFrame(tableCoords, columns=['Time', 'numDone'])
@@ -125,7 +129,6 @@ def speakBut():
     speech.save("msg.mp3")
     playsound('msg.mp3')
 
-
 # main method that loops. Repeats once a millisecond
 def task():
     global timeDone
@@ -135,14 +138,12 @@ def task():
         timeDone += numPerRefresh
         xCoord.append(int(timeLapsed / 60))  # add entry to table
         yCoord.append(timeDone)
+        actualYCoord.append(numDone)
         prodGraph.plot(xCoord, yCoord, 'g')
         prodGraph.plot(xCoord, actualYCoord, 'b')
         canvas.draw()
-        convCoord = []  # sets up array in proper format for table
-        i = 0
-        while i < len(xCoord):
-            convCoord.append([time_convert(), yCoord[i]])
-            i += 1
+        global convCoord
+        convCoord.append([time_convert(), yCoord[len(yCoord)-1]])
 
         tableCoords = np.array(convCoord)  # convert fake table to real table
         df = pd.DataFrame(tableCoords, columns=['Time', 'numDone'])
@@ -159,8 +160,7 @@ def task():
     window.after(1, lambda: task())
 
 
-window = tk.Tk()  # create window and frames for buttons
-window.attributes('-fullscreen', True)
+
 frame1 = tk.Frame(master=window, width=250, height=100, bg="red")
 frame1.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True)
 frame2 = tk.Frame(master=window, width=100, bg="YELLOW")
@@ -191,13 +191,16 @@ canvas.get_tk_widget().pack(expand=True, fill=tk.BOTH)
 canvas.draw()
 
 # create buttons
-buttonChangeParam = tk.Button(frame5, text="Change parameters", command=lambda: changeParamBut())
+settingsImage= tk.PhotoImage(file="settingsIcon.jpg")
+buttonChangeParam = tk.Button(frame5, text="Change parameters", image=settingsImage, command=lambda: changeParamBut())
 buttonChangeParam.pack()
-buttonKill = tk.Button(frame2, text="close window",
+killImage= tk.PhotoImage(file="powerIcon.jpg")
+buttonKill = tk.Button(frame2, text="close window", image=killImage,
                        command=lambda:
                        killBut())
 buttonKill.pack()
-buttonSpeak = tk.Button(frame4, text="speak", command=lambda: speakBut())
+soundImage=tk.PhotoImage(file="soundIcons.jpg")
+buttonSpeak = tk.Button(frame4, text="speak", image=soundImage, command=lambda: speakBut())
 buttonSpeak.pack()
 
 window.after(1, func=task())
