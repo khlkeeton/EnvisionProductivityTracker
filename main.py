@@ -2,7 +2,7 @@ import time
 import tkinter as tk
 from datetime import date
 from tkinter import CENTER
-
+import serial
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ convCoord = []  # sets up array in proper format for table
 
 # set global variables used everywhere
 goal = 0
-numPerCycle = 0
+numPerCycle = 5
 numWorker = 0
 refreshRate = 5
 month = date.today().month
@@ -24,16 +24,17 @@ year = date.today().year
 keepgoing = True
 numPerRefresh = 5
 start_time = time.time()  # to be compared with curr time in loop
-xCoord = [0]  # things used to set up graph
+xCoord = [0]  # things used to set up graph./venv
 yCoord = [0]  # ideal rate
 actualYCoord = [0]  # uses the arudino code
 timeDone = 0  # track number of items made
 timeLapsed = 0
-timeComplete = 60 * 60 * 8
+timeComplete = 60*60*8
 window = tk.Tk()  # create window and frames for buttons
 window.attributes('-fullscreen', True)
 numDone=0
-
+dontCheck=False
+ser = serial.Serial('COM4', 9600, timeout=1)
 
 
 def time_convert():  # can be used to show time elapsed. May be used later
@@ -58,6 +59,8 @@ def changeParamBut():
             refreshRate = int(inputRefreshRate.get(1.0, "end-1c")) * 60
         numPerRefresh = (int(goal) - int(yCoord[len(yCoord) - 1])) / (
                 timeComplete - (timeLapsed - timeDone)) * refreshRate
+        if numPerRefresh==0:
+            numPerRefresh=5
         top.destroy()
 
     # create widgets needed for input parameter box
@@ -103,7 +106,7 @@ convCoord = []  # sets up array in proper format for table
 def killBut():
     # creates table
     global convCoord
-    convCoord.append([time_convert(), yCoord[len(yCoord) - 1]])
+    convCoord.append([time_convert(), yCoord[len(actualYCoord) - 1]])
 
     tableCoords = np.array(convCoord)  # convert fake table to real table
     df = pd.DataFrame(tableCoords, columns=['Time', 'numDone'])
@@ -135,29 +138,57 @@ def speakBut():
 def task():
     global timeDone
     global timeLapsed
+    global numDone
+    global numPerCycle
+    global ser
+    global dontCheck
+    #value = ser.readline().decode().rstrip()
+    #value=""+value            
+    #if dontCheck==False:
+#    #    if len(value)!=0:
+#            numDone+=numPerCycle
+#            dontCheck=True
+#            print('stayedIn')
+#    else:
+#        if len(value)!=0:
+#            dontCheck=False
     timeLapsed = time.time() - start_time
-    if timeLapsed % int(refreshRate) <= .1:  # checks if interval is hit
-        timeDone += numPerRefresh
-        xCoord.append(int(timeLapsed / 60))  # add entry to table
+    if timeLapsed % refreshRate <= .1:  # checks if interval is hit
+        
+        xCoord.append(int(timeLapsed/60))  # add entry to table
         yCoord.append(timeDone)
         actualYCoord.append(numDone)
         prodGraph.plot(xCoord, yCoord, 'g')
         prodGraph.plot(xCoord, actualYCoord, 'b')
+        timeDone += numPerRefresh
+        global canvas
         canvas.draw()
         global convCoord
-        convCoord.append([time_convert(), yCoord[len(yCoord)-1]])
+        convCoord.append([time_convert(), actualYCoord[len(actualYCoord)-1]])
 
         tableCoords = np.array(convCoord)  # convert fake table to real table
-        df = pd.DataFrame(tableCoords, columns=['Time', 'numDone'])
+        df = pd.DataFrame(tableCoords, columns=['Time (minutes)', 'numDone'])
         print(df)  # check table looks good
         print(type(df))
         df.to_excel(
             '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'.format(year, month, day,
                                                                             numWorker))  # push to excel
-        speakBut()
-        while timeLapsed % int(refreshRate) < .1:  # ensure loop not re-entered immediately
-            timeLapsed = time.time() - start_time
-
+        #speakBut()
+        if actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1]:
+            image=Image.open("goodIcon.png")
+        elif actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1] * .9:
+            image=Image.open("mediumIcon.png")
+        else:
+            image=Image.open("badIcon.png")
+        global dimension
+        image=image.resize((dimension, dimension))
+        global progIcon
+        progIcon= ImageTk.PhotoImage(image)
+        global progButton
+        progButton.config(image=progIcon)
+        
+        
+    
     window.update()
     window.after(1, lambda: task())
 
@@ -165,17 +196,21 @@ def task():
 
 frame1 = tk.Frame(master=window, width=250, height=100, bg="red")
 frame1.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True)
-frame2 = tk.Frame(master=window, width=100, bg="WHITE")
+frame2 = tk.Frame(master=window, width=100, bg="#a2c4ca")
 frame2.pack(fill=tk.BOTH, side=tk.BOTTOM, expand=True)
-frame3 = tk.Frame(master=window, width=50, bg="blue")
+frame3 = tk.Frame(master=window, width=50, bg="#a2c4ca")
 frame3.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
-frame4 = tk.Frame(master=window, width=100, bg="WHITE")
+frame4 = tk.Frame(master=window, width=100, bg="#a2c4ca")
 frame4.pack(fill=tk.BOTH, side=tk.BOTTOM, expand=True)
-frame5 = tk.Frame(master=window, width=50, bg="WHITE")
+frame5 = tk.Frame(master=window, width=50, bg="#a2c4ca")
 frame5.pack(fill=tk.BOTH, side=tk.BOTTOM, expand=True)
 
+
+
+
+
 # graph
-fig = plt.Figure(dpi=100, facecolor="white", edgecolor='white', figsize=(frame1.winfo_x(), frame1.winfo_y()))
+fig = plt.Figure(dpi=100, facecolor="#d0e0e3", edgecolor='#d0e0e3', figsize=(frame1.winfo_x(), frame1.winfo_y()))
 prodGraph = fig.add_subplot(111)
 prodGraph.xaxis.label.set_color('black')  # setting up X-axis label color to black
 prodGraph.yaxis.label.set_color('black')  # setting up Y-axis label color to black
@@ -213,6 +248,13 @@ image=image.resize((int(frame5.winfo_width()*.9*72), int(frame5.winfo_width()*.9
 soundImage= ImageTk.PhotoImage(image)
 buttonSpeak = tk.Button(frame4, text="speak", image=soundImage, command=lambda: speakBut())
 buttonSpeak.place(relx=0.5, rely=0.5, anchor= CENTER)
+
+image=Image.open("goodIcon.png")
+image=image.resize((int(frame5.winfo_width()*.9*72), int(frame5.winfo_width()*.9*72)))
+progIcon= ImageTk.PhotoImage(image)
+progButton = tk.Button(frame3, text="speak", image=progIcon, command=lambda: speakBut())
+progButton.place(relx=0.5, rely=0.5, anchor= CENTER)
+dimension=int(frame5.winfo_width()*.9*72)
 
 window.after(1, func=task())
 changeParamBut()
