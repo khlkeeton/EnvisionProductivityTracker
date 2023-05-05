@@ -230,6 +230,8 @@ def task():
     window.after(1, lambda: task())
 def portFileChange():
     def windKilller():
+        global excelFilePath
+        excelFilePath=fileFinder + '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'
         errorScreen.destroy()
     def changePort(selection):
         global port
@@ -252,6 +254,8 @@ def portFileChange():
     ports = serial.tools.list_ports.comports()
     portSelector = tk.OptionMenu(frame3Error, "Please select your port", *ports, command=changePort)
     portSelector.pack(side=tk.RIGHT)
+    fileFinder = filedialog.askdirectory()
+
     closeErrorWindBut = tk.Button(frame4Error, text="close", command=lambda: windKilller())
     closeErrorWindBut.pack()
 
@@ -319,8 +323,7 @@ progButton = tk.Button(frame3, text="speak", image=progIcon, command= portFileCh
 progButton.place(relx=0.5, rely=0.5, anchor= CENTER)
 dimension=int(frame5.winfo_width()*.9*72)
 
-fileFinder = filedialog.askdirectory()
-excelFilePath=fileFinder + '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'
+
 
 window.after(1, func=task())
 changeParamBut()
