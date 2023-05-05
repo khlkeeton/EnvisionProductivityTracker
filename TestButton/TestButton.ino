@@ -5,7 +5,8 @@ void setup() {
 
 void loop() {
   if (digitalRead(2) == LOW) { // Check if input on pin 2 is HIGH
-    Serial.println("LOW");    // Print "Hello" to Serial Monitor
+    Serial.write(1);    // Print "Hello" to Serial Monitor
+  } else {
+    Serial.write(0);
   }
-  
 }

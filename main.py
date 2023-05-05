@@ -1,5 +1,6 @@
 import time
 import tkinter as tk
+
 from datetime import date
 from tkinter import CENTER
 import serial
@@ -14,10 +15,11 @@ convCoord = []  # sets up array in proper format for table
 
 
 # set global variables used everywhere
+mLRefresh = True
 goal = 0
 numPerCycle = 5
-numWorker = 0
-refreshRate = 5
+numWorker = 2
+refreshRate = 240
 month = date.today().month
 day = date.today().day
 year = date.today().year
@@ -35,6 +37,7 @@ window.attributes('-fullscreen', True)
 numDone=0
 dontCheck=False
 ser = serial.Serial('COM4', 9600, timeout=1)
+lastStateChange = time.time()
 
 
 def time_convert():  # can be used to show time elapsed. May be used later
@@ -49,15 +52,15 @@ def changeParamBut():
         global numWorker
         global refreshRate
         global numPerRefresh
-        if len(inputToDo.get(1.0, "end-1c")) != 0:
+        if len(inputToDo.get(1.0, "end-1c")) != 0: #change goal based on user input
             goal = inputToDo.get(1.0, "end-1c")
-        if len(inputNumCycle.get(1.0, "end-1c")) != 0:
+        if len(inputNumCycle.get(1.0, "end-1c")) != 0: #change number per cycle based on user input
             numPerCycle = inputNumCycle.get(1.0, "end-1c")
-        if len(inputNumWorker.get(1.0, "end-1c")) != 0:
+        if len(inputNumWorker.get(1.0, "end-1c")) != 0: #change number of workers based on user input
             numWorker = inputNumWorker.get(1.0, "end-1c")
-        if len(inputRefreshRate.get(1.0, "end-1c")) != 0:
+        if len(inputRefreshRate.get(1.0, "end-1c")) != 0: #change refresh rate based on user input
             refreshRate = int(inputRefreshRate.get(1.0, "end-1c")) * 60
-        numPerRefresh = (int(goal) - int(yCoord[len(yCoord) - 1])) / (
+        numPerRefresh = (int(goal) - int(yCoord[len(yCoord) - 1])) / ( #change the number of blister packs per refresh based on the user inputs and the time left
                 timeComplete - (timeLapsed - timeDone)) * refreshRate
         if numPerRefresh==0:
             numPerRefresh=5
@@ -106,7 +109,7 @@ convCoord = []  # sets up array in proper format for table
 def killBut():
     # creates table
     global convCoord
-    convCoord.append([time_convert(), yCoord[len(actualYCoord) - 1]])
+    convCoord.append([time_convert(), actualYCoord[len(actualYCoord) - 1]])
 
     tableCoords = np.array(convCoord)  # convert fake table to real table
     df = pd.DataFrame(tableCoords, columns=['Time', 'numDone'])
@@ -120,7 +123,7 @@ def killBut():
     keepgoing = False
 
 
-# speak. Depending on parameters, the message changes
+# speak. Depending on progress, the message changes
 def speakBut():
     if actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1]:
         message = "You are on track"
@@ -132,7 +135,10 @@ def speakBut():
             yCoord[len(yCoord) - 1] - actualYCoord[len(actualYCoord) - 1])
     speech = gTTS(text=message)
     speech.save("msg.mp3")
-    playsound('msg.mp3')
+    try:
+        playsound('msg.mp3')
+    except:
+        print("no input device")
 
 # main method that loops. Repeats once a millisecond
 def task():
@@ -142,25 +148,31 @@ def task():
     global numPerCycle
     global ser
     global dontCheck
-    #value = ser.readline().decode().rstrip()
-    #value=""+value            
-    #if dontCheck==False:
-#    #    if len(value)!=0:
-#            numDone+=numPerCycle
-#            dontCheck=True
-#            print('stayedIn')
-#    else:
-#        if len(value)!=0:
-#            dontCheck=False
+    global lastStateChange
+    global mLRefresh
+    value = int.from_bytes(ser.read(1), "big") #take arduino input
+    
+    if(time.time()-lastStateChange>=100): #increments number done based on arduino input
+        if dontCheck==False:
+            if value==1:
+                numDone+=int(numPerCycle)
+                dontCheck=True
+                lastStateChange=time.time()
+        else:
+            if value==0:
+                dontCheck=False
+                lastStateChange=time.time()
     timeLapsed = time.time() - start_time
-    if timeLapsed % refreshRate <= .1:  # checks if interval is hit
-        
+    if timeLapsed % refreshRate <= .1 and mLRefresh == True:  # checks if interval is hit
+        mLRefresh = False
         xCoord.append(int(timeLapsed/60))  # add entry to table
-        yCoord.append(timeDone)
-        actualYCoord.append(numDone)
-        prodGraph.plot(xCoord, yCoord, 'g')
-        prodGraph.plot(xCoord, actualYCoord, 'b')
         timeDone += numPerRefresh
+        yCoord.append(timeDone)
+        print(yCoord)
+        actualYCoord.append(numDone)
+        prodGraph.plot(xCoord, yCoord, 'g', linewidth=10)
+        prodGraph.plot(xCoord, actualYCoord, 'b', linewidth=10)
+
         global canvas
         canvas.draw()
         global convCoord
@@ -173,8 +185,8 @@ def task():
         df.to_excel(
             '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'.format(year, month, day,
                                                                             numWorker))  # push to excel
-        #speakBut()
-        if actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1]:
+        speakBut()
+        if actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1]: #change the icon of top left icon based on progress
             image=Image.open("goodIcon.png")
         elif actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1] * .9:
             image=Image.open("mediumIcon.png")
@@ -186,14 +198,16 @@ def task():
         progIcon= ImageTk.PhotoImage(image)
         global progButton
         progButton.config(image=progIcon)
-        
+    elif timeLapsed % refreshRate >= .1: #ensure no double hit
+        mLRefresh = True
+       
         
     
     window.update()
     window.after(1, lambda: task())
 
 
-
+#more window setup
 frame1 = tk.Frame(master=window, width=250, height=100, bg="red")
 frame1.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True)
 frame2 = tk.Frame(master=window, width=100, bg="#a2c4ca")

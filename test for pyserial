@@ -4,7 +4,7 @@ ser = serial.Serial('COM4', 9600, timeout=1)
 
 try:
     while True:
-        value = ser.readline().decode().rstrip()
+        value = int.from_bytes(ser.read(1), "big")
         print("Received value: ", value)
 except KeyboardInterrupt:
     print("Program stopped by user")
