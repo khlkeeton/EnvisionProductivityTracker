@@ -1,9 +1,10 @@
 import time
 import tkinter as tk
-
+from tkinter import filedialog
 from datetime import date
 from tkinter import CENTER
 import serial
+import serial.tools.list_ports
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -12,8 +13,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from playsound import playsound
 from PIL import ImageTk, Image
 convCoord = []  # sets up array in proper format for table
-
-
+excelFilePath = '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'
+port = 'COM4'
+lastError = time.time()
 # set global variables used everywhere
 mLRefresh = True
 goal = 0
@@ -36,7 +38,10 @@ window = tk.Tk()  # create window and frames for buttons
 window.attributes('-fullscreen', True)
 numDone=0
 dontCheck=False
-ser = serial.Serial('COM4', 9600, timeout=1)
+try:
+    ser = serial.Serial(port, 9600, timeout=1)
+except:
+    print("changing port later")
 lastStateChange = time.time()
 
 
@@ -115,8 +120,14 @@ def killBut():
     df = pd.DataFrame(tableCoords, columns=['Time', 'numDone'])
     print(df)  # check table looks good
     print(type(df))  # for debugging, show table
-    df.to_excel(
-        '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'.format(year, month, day, numWorker))  # push to excel
+    try:
+        df.to_excel(
+            excelFilePath.format(year, month, day, numWorker))  # push to excel
+    except:
+        print("bad excel file path")
+        if time.time-lastError > 600:
+            portFileChange()
+            lastError=time.time()
     window.destroy()
     window.quit()
     global keepgoing
@@ -150,8 +161,13 @@ def task():
     global dontCheck
     global lastStateChange
     global mLRefresh
-    value = int.from_bytes(ser.read(1), "big") #take arduino input
-    
+    try:
+        value = int.from_bytes(ser.read(1), "big") #take arduino input
+    except:
+        print("kinda need to change ports")
+        if time.time-lastError > 600:
+            portFileChange()
+            lastError=time.time()
     if(time.time()-lastStateChange>=100): #increments number done based on arduino input
         if dontCheck==False:
             if value==1:
@@ -182,9 +198,16 @@ def task():
         df = pd.DataFrame(tableCoords, columns=['Time (minutes)', 'numDone'])
         print(df)  # check table looks good
         print(type(df))
-        df.to_excel(
-            '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'.format(year, month, day,
+        try:
+            df.to_excel(
+                 excelFilePath.format(year, month, day,
                                                                             numWorker))  # push to excel
+        except:
+            print("wrong file path")
+            if time.time-lastError > 600:
+                portFileChange()
+                lastError=time.time()
+        
         speakBut()
         if actualYCoord[len(actualYCoord) - 1] >= yCoord[len(yCoord) - 1]: #change the icon of top left icon based on progress
             image=Image.open("goodIcon.png")
@@ -205,6 +228,32 @@ def task():
     
     window.update()
     window.after(1, lambda: task())
+def portFileChange():
+    def windKilller():
+        errorScreen.destroy()
+    def changePort(selection):
+        global port
+        global ser
+        port=selection
+        ser = serial.Serial(port, 9600, timeout=1)
+    errorScreen = tk.Toplevel(window)
+    errorScreen.attributes('-topmost', True)
+    errorScreen.title("reset inputs/file path")
+    frame1Error = tk.Frame(master=errorScreen)
+    frame1Error.pack(fill = tk.BOTH, side = tk.TOP, expand=True)
+    frame3Error = tk.Frame(master=errorScreen)
+    frame3Error.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
+    frame4Error = tk.Frame(master=errorScreen)
+    frame4Error.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
+    errorMessage=tk.Label(frame1Error, text="You are probably getting this screen because a file path is wrong or the wrong input port is being used. Please select a valid one from the dropdown menu below")
+    errorMessage.pack()
+    selectArduiPath=tk.Label(frame3Error, text="The Arduino port is ")
+    selectArduiPath.pack(side=tk.LEFT)
+    ports = serial.tools.list_ports.comports()
+    portSelector = tk.OptionMenu(frame3Error, "Please select your port", *ports, command=changePort)
+    portSelector.pack(side=tk.RIGHT)
+    closeErrorWindBut = tk.Button(frame4Error, text="close", command=lambda: windKilller())
+    closeErrorWindBut.pack()
 
 
 #more window setup
@@ -266,9 +315,12 @@ buttonSpeak.place(relx=0.5, rely=0.5, anchor= CENTER)
 image=Image.open("goodIcon.png")
 image=image.resize((int(frame5.winfo_width()*.9*72), int(frame5.winfo_width()*.9*72)))
 progIcon= ImageTk.PhotoImage(image)
-progButton = tk.Button(frame3, text="speak", image=progIcon, command=lambda: speakBut())
+progButton = tk.Button(frame3, text="speak", image=progIcon, command= portFileChange())
 progButton.place(relx=0.5, rely=0.5, anchor= CENTER)
 dimension=int(frame5.winfo_width()*.9*72)
+
+fileFinder = filedialog.askdirectory()
+excelFilePath=fileFinder + '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'
 
 window.after(1, func=task())
 changeParamBut()
