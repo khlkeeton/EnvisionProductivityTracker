@@ -231,7 +231,8 @@ def task():
 def portFileChange():
     def windKilller():
         global excelFilePath
-        excelFilePath=fileFinder + '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'
+        excelFilePath=fileFinder + '/{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'
+        print(excelFilePath)
         errorScreen.destroy()
     def changePort(selection):
         global port
