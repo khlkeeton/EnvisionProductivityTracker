@@ -125,6 +125,7 @@ def killBut():
             excelFilePath.format(year, month, day, numWorker))  # push to excel
     except:
         print("bad excel file path")
+        global lastError
         if time.time-lastError > 600:
             portFileChange()
             lastError=time.time()
@@ -165,6 +166,7 @@ def task():
         value = int.from_bytes(ser.read(1), "big") #take arduino input
     except:
         print("kinda need to change ports")
+        global lastError
         if time.time-lastError > 600:
             portFileChange()
             lastError=time.time()
