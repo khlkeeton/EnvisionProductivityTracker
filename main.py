@@ -127,7 +127,7 @@ def killBut():
     except:
         print("bad excel file path")
         global lastError
-        if time.time-lastError > 600:
+        if time.time()-lastError > 600:
             portFileChange()
             lastError=time.time()
     window.destroy()
@@ -144,7 +144,7 @@ def speakBut():
         message = "You are almost on track. You are {0} off".format(
             yCoord[len(yCoord) - 1] - actualYCoord[len(actualYCoord) - 1])
     else:
-        message = "You are almost not on track. You are {0} off".format(
+        message = "You are a bit behind. You are {0} off".format(
             yCoord[len(yCoord) - 1] - actualYCoord[len(actualYCoord) - 1])
     speech = gTTS(text=message)
     speech.save("msg.mp3")
