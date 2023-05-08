@@ -287,8 +287,8 @@ prodGraph.yaxis.label.set_color('black')  # setting up Y-axis label color to bla
 prodGraph.tick_params(axis='x', colors='black')  # setting up X-axis tick color to black
 prodGraph.tick_params(axis='y', colors='black')  # setting up Y-axis tick color to black
 prodGraph.plot(xCoord, yCoord)
-prodGraph.set_xlabel("time")
-prodGraph.set_ylabel("cycles completed")
+prodGraph.set_xlabel("time (minutes)")
+prodGraph.set_ylabel("Blister Packs Produced")
 prodGraph.set_title("Productivity graph")
 prodGraph.grid()
 prodGraph.margins(x=0)
@@ -324,7 +324,7 @@ image=image.resize((int(frame5.winfo_width()*.9*72), int(frame5.winfo_width()*.9
 progIcon= ImageTk.PhotoImage(image)
 progButton = tk.Button(frame3, text="speak", image=progIcon, command= portFileChange())
 progButton.place(relx=0.5, rely=0.5, anchor= CENTER)
-dimension=int(frame5.winfo_width()*.9*72)
+dimension=int(frame5.winfo_width()*.9)
 
 
 
