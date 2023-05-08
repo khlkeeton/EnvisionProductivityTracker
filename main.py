@@ -12,6 +12,7 @@ from gtts import gTTS
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from playsound import playsound
 from PIL import ImageTk, Image
+import os
 convCoord = []  # sets up array in proper format for table
 excelFilePath = '{0}-{1}-{2}_productivity_blister_pack_{3}_workers.xlsx'
 port = 'COM4'
@@ -151,6 +152,7 @@ def speakBut():
         playsound('msg.mp3')
     except:
         print("no input device")
+    os.remove("msg.mp3")
 
 # main method that loops. Repeats once a millisecond
 def task():
